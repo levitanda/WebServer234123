@@ -82,7 +82,7 @@ int pull_out_ind(Queue queue, int index) {
         return -1;
     }
     if (index == 0) {
-        return dequeue(queue);
+        return pull_out_queue(queue);
     }
     if (index < 0 || index >= queue->size) {
         return -1;

@@ -50,7 +50,7 @@ void* handle_thread(void* args)
         pthread_mutex_unlock(&mutex);
         struct timeval handle_time;
         gettimeofday(&handle_time, NULL);
-        requestHandle(fd, sthread, dthread, sumup_thread, index, received, handle_time);
+        requestHandle(fd, sthread, dthread, sumup_thread, thread_index, received, handle_time);
         Close(fd);
         pthread_mutex_lock(&mutex);
         int index = search_index(in_progress_requests_queue, fd);
@@ -64,7 +64,7 @@ void* handle_thread(void* args)
 
 int main(int argc, char *argv[])
 {
-    int listenfd, connfd, port, clientlen, threads, max_size;
+    int listenfd, con, port, clientlen, threads, max_size;
     char distribution[7];
     struct sockaddr_in clientaddr;
     getargs(&port, argc, argv, &threads, &max_size, distribution);
@@ -83,17 +83,51 @@ int main(int argc, char *argv[])
     listenfd = Open_listenfd(port);
     while (1) {
         clientlen = sizeof(clientaddr);
-        connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+        con = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
         pthread_mutex_lock(&mutex);
-        //!!!!!!!!!!!! Continue here!!!!!!!
-        // 
-        // HW3: In general, don't handle the request in the main thread.
-        // Save the relevant info in a buffer and have one of the worker threads 
-        // do the work. 
-        // 
-        requestHandle(connfd);
-
-        Close(connfd);
+        if (queue_size(waiting_request_queue) + queue_size(in_progress_requests_queue) == max_size) {
+            if (strcmp(distribution, "block") != 0) {
+                if (strcmp(distribution, "dh") == 0) {
+                    if (queue_size(waiting_request_queue)!=0) {
+                        int fd = pull_out_queue(waiting_request_queue);
+                        Close(fd);
+                    } else {
+                        Close(con);
+                        pthread_mutex_unlock(&mutex);
+                        continue;
+                    }
+                } else if (strcmp(distribution, "random") == 0) {
+                    if (queue_size(waiting_request_queue)!=0) {
+                        int dropping = (int)((queue_size(waiting_request_queue) + 1) / 2);
+                        for (int i = 0; i < dropping; i++) {
+                            if (queue_size(waiting_request_queue)==0)
+                                break;
+                            int random_number = rand();
+                            int index = random_number % queue_size(waiting_request_queue);
+                            int fd = pull_out_ind(waiting_request_queue, index);
+                            Close(fd);
+                        }
+                    } else {
+                        Close(con);
+                        pthread_mutex_unlock(&mutex);
+                        continue;
+                    }
+                } else if (strcmp(distribution, "dt") == 0) {
+                    Close(con);
+                    pthread_mutex_unlock(&mutex);
+                    continue;
+                }
+            } else {
+                while (queue_size(in_progress_requests_queue) + queue_size(waiting_request_queue) == max_size) {
+                    pthread_cond_wait(&bcond, &mutex);
+                }
+            }
+        }
+        struct timeval received;
+        gettimeofday(&received, NULL);
+        pull_in_queue(waiting_request_queue, con, received);
+        pthread_cond_signal(&cond);
+        pthread_mutex_unlock(&mutex);        
     }
 
 }
