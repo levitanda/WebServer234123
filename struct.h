@@ -11,3 +11,4 @@ int pull_out_queue(Queue queue);
 Request new_request(int value, struct timeval received);
 int pull_out_ind(Queue queue, int index);
 int search_index(Queue queue, int value);
+void change_max_queue_size(Queue queue,int new_size);

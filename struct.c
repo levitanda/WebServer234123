@@ -118,6 +118,9 @@ int search_index(Queue queue, int value){
     return -1;
 }
 
+void change_max_queue_size(Queue queue,int new_size){
+    queue->max_size = new_size;
+}
 
 
 
