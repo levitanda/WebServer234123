@@ -37,37 +37,22 @@ void getargs(int *port, int argc, char *argv[], int *thread, int *size, int *max
     distribution[sizeof(distribution) - 1] = '\0';
 }
 
-/*
-void getargs(int *port, int *thread_num, int *queue_size, char* schedalg , int argc, char *argv[])
-{
-    if (argc < 5) {
-	fprintf(stderr, "Usage: %s <port>\n", argv[0]);
-	exit(1);
-    } 
-    *port = strtol(argv[1], NULL, 10);
-    *thread_num = strtol(argv[2], NULL, 10);
-    *queue_size = strtol(argv[3], NULL, 10);
-    strncpy(schedalg, argv[4], sizeof(schedalg) - 1);
-    schedalg[sizeof(schedalg) - 1] = '\0';
-}*/
-
-
 
 void* handle_thread(void* args)
 {
-    int thread_index = ((int *)args)[0];
+    int ind = ((int *)args)[0];
     while (1) {
         pthread_mutex_lock(&mutex);
         while (queue_size(waiting_request_queue)==0) {
             pthread_cond_wait(&cond, &mutex);
         }
         struct timeval received = time_head_received(waiting_request_queue);
-        int fd = pull_out_queue(waiting_request_queue);
+        int fd = pull_out_queue(waiting_request_queue); 
         pull_in_queue(in_progress_requests_queue, fd, received);
         pthread_mutex_unlock(&mutex);
         struct timeval handle_time;
         gettimeofday(&handle_time, NULL);
-        requestHandle(fd, sthread, dthread, sumup_thread, thread_index, received, handle_time);
+        requestHandle(fd, sthread, dthread, sumup_thread, ind, received, handle_time);
         Close(fd);
         pthread_mutex_lock(&mutex);
         int index = search_index(in_progress_requests_queue, fd);

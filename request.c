@@ -14,7 +14,7 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    // Create the body of the error message
    sprintf(body, "<html><title>OS-HW3 Error</title>");
    sprintf(body, "%s<body bgcolor=""fffff"">\r\n", body);
-   sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg);
+   sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg); //to add :
    sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
    sprintf(body, "%s<hr>OS-HW3 Web Server\r\n", body);
 
@@ -27,7 +27,7 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
-   sprintf(buf, "Content-Length: %lu\r\n\r\n", strlen(body));
+   sprintf(buf, "Content-Length: %lu\r\n", strlen(body)); //!!!
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
@@ -36,8 +36,9 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, index);
    sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, sumup_thread[index]);
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, sthread[index]);
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, dthread[index]);
-
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, dthread[index]);  //!!!
+   Rio_writen(fd, buf, strlen(buf)); //added
+   printf("%s", buf); //added
    // Write out the content
    Rio_writen(fd, body, strlen(body));
    printf("%s", body);
@@ -116,23 +117,23 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, int *sthread, in
    // The server does only a little bit of the header.  
    // The CGI script has to finish writing out the header.
    sprintf(buf, "HTTP/1.0 200 OK\r\n");
-   sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
+   sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf); 
    sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, received.tv_sec, received.tv_usec);
    sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, delta.tv_sec, delta.tv_usec);
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, index);
    sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, sumup_thread[index]);
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, sthread[index]);
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, dthread[index]);
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, dthread[index]); //!!!
    Rio_writen(fd, buf, strlen(buf));
-
-   if (Fork() == 0) {
+   pid_t pid = Fork();
+   if (pid == 0) {
       /* Child process */
       Setenv("QUERY_STRING", cgiargs, 1);
       /* When the CGI process writes to stdout, it will instead go to the socket */
       Dup2(fd, STDOUT_FILENO);
       Execve(filename, emptylist, environ);
    }
-   Wait(NULL);
+   WaitPid(pid, NULL, 0);
 }
 
 
@@ -153,7 +154,7 @@ void requestServeStatic(int fd, char *filename, int filesize, int *sthread, int 
    sprintf(buf, "HTTP/1.0 200 OK\r\n");
    sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
    sprintf(buf, "%sContent-Length: %d\r\n", buf, filesize);
-   sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, filetype);
+   sprintf(buf, "%sContent-Type: %s\r\n", buf, filetype); //!!! test_request fails if add
    sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, received.tv_sec, received.tv_usec);
    sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, delta.tv_sec, delta.tv_usec);
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, index);
@@ -212,6 +213,7 @@ void requestHandle(int fd, int *sthread, int *dthread, int *sumup_thread, int in
          return;
       }
       sumup_thread[index]++;
+      dthread[index]++; //added
       requestServeDynamic(fd, filename, cgiargs, sthread, dthread, sumup_thread, index, received, handeling);
    }
 }
