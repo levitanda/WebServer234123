@@ -27,7 +27,7 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
-   sprintf(buf, "Content-Length: %lu\r\n", strlen(body)); //!!!
+   sprintf(buf, "Content-Length: %lu\r\n", strlen(body)); 
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
@@ -36,7 +36,7 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, index);
    sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, sumup_thread[index]);
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, sthread[index]);
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, dthread[index]);  //!!!
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, dthread[index]);  
    Rio_writen(fd, buf, strlen(buf)); //added
    printf("%s", buf); //added
    // Write out the content
@@ -188,7 +188,6 @@ void requestHandle(int fd, int *sthread, int *dthread, int *sumup_thread, int in
       return;
    }
    requestReadhdrs(&rio);
-
    is_static = requestParseURI(uri, filename, cgiargs);
    if (stat(filename, &sbuf) < 0) {
       //sumup_thread[index]++; 
@@ -211,7 +210,7 @@ void requestHandle(int fd, int *sthread, int *dthread, int *sumup_thread, int in
          requestError(fd, filename, "403", "Forbidden", "OS-HW3 Server could not run this CGI program", sthread, dthread, sumup_thread, index, received, handeling);
          return;
       }
-      //sumup_thread[index]++;  //we need it
+      //sumup_thread[index]++;  
       dthread[index]++; //added
       requestServeDynamic(fd, filename, cgiargs, sthread, dthread, sumup_thread, index, received, handeling);
    }

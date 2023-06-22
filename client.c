@@ -32,7 +32,6 @@ void clientSend(int fd, char *filename)
   char buf[MAXLINE];
   char hostname[MAXLINE];
   Gethostname(hostname, MAXLINE);
-  printf("BEFORE WRITE");
   sprintf(buf, "GET %s HTTP/1.1\n", filename);
   sprintf(buf, "%shost: %s\n\r\n", buf, hostname);
   Rio_writen(fd, buf, strlen(buf));
