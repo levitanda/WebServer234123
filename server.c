@@ -41,9 +41,11 @@ void getargs(int *port, int argc, char *argv[], int *thread, int *size, int *max
 void* handle_thread(void* args)
 {
     int ind = ((int *)args)[0];
+    int count = 0;
+    //while (count <10){
     while (1) {
         pthread_mutex_lock(&mutex);
-        while (queue_size(waiting_request_queue)==0) {
+        while (queue_size(waiting_request_queue)<=0) {
             pthread_cond_wait(&cond, &mutex);
         }
         struct timeval received = time_head_received(waiting_request_queue);
@@ -59,6 +61,7 @@ void* handle_thread(void* args)
         pull_out_ind(in_progress_requests_queue, index);
         pthread_cond_signal(&bcond);
         pthread_mutex_unlock(&mutex);
+        count++;
     }
     return NULL;
 }
@@ -85,6 +88,7 @@ int main(int argc, char *argv[])
     for(int i =0; i < threads; i++){
         dthread[i] = 0;
         sthread[i] = 0;
+        sumup_thread[i] = 0;
     }
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond, NULL);
@@ -94,7 +98,6 @@ int main(int argc, char *argv[])
         clientlen = sizeof(clientaddr);
         con = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
         pthread_mutex_lock(&mutex);
-        
         if (queue_size(waiting_request_queue) + queue_size(in_progress_requests_queue) == queues_size) {
             if (strcmp(distribution, "block") != 0) {
                 if (strcmp(distribution, "dh") == 0) {
@@ -127,9 +130,12 @@ int main(int argc, char *argv[])
                     pthread_mutex_unlock(&mutex);
                     continue;
                 } else if (strcmp(distribution, "bf") == 0){
-                    while (queue_size(in_progress_requests_queue) + queue_size(waiting_request_queue) != 0){
+                    while (queue_size(in_progress_requests_queue) + queue_size(waiting_request_queue) == queues_size){
                         pthread_cond_wait(&bcond, &mutex);
                     }
+                    Close(con); //added
+                    pthread_mutex_unlock(&mutex); //added
+                    continue; // added
                 } else if (strcmp(distribution, "dynamic") == 0){
                     if (queues_size < max_size){
                         queues_size++;
@@ -146,6 +152,9 @@ int main(int argc, char *argv[])
             } else {
                 while (queue_size(in_progress_requests_queue) + queue_size(waiting_request_queue) == queues_size) {
                     pthread_cond_wait(&bcond, &mutex);
+                    Close(con); // added
+                    pthread_mutex_unlock(&mutex);
+                    continue;  //added
                 }
             }
         }

@@ -149,7 +149,6 @@ void requestServeStatic(int fd, char *filename, int filesize, int *sthread, int 
    // which would require that we allocate a buffer, we memory-map the file
    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
    Close(srcfd);
-
    // put together response
    sprintf(buf, "HTTP/1.0 200 OK\r\n");
    sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
@@ -182,9 +181,9 @@ void requestHandle(int fd, int *sthread, int *dthread, int *sumup_thread, int in
    sscanf(buf, "%s %s %s", method, uri, version);
 
    printf("%s %s %s\n", method, uri, version);
-
+   sumup_thread[index]++;
    if (strcasecmp(method, "GET")) {
-      sumup_thread[index]++;
+      //sumup_thread[index]++; 
       requestError(fd, method, "501", "Not Implemented", "OS-HW3 Server does not implement this method", sthread, dthread, sumup_thread, index, received, handeling);
       return;
    }
@@ -192,27 +191,27 @@ void requestHandle(int fd, int *sthread, int *dthread, int *sumup_thread, int in
 
    is_static = requestParseURI(uri, filename, cgiargs);
    if (stat(filename, &sbuf) < 0) {
-      sumup_thread[index]++;
+      //sumup_thread[index]++; 
       requestError(fd, filename, "404", "Not found", "OS-HW3 Server could not find this file", sthread, dthread, sumup_thread, index, received, handeling);
       return;
    }
 
    if (is_static) {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
-         sumup_thread[index]++;
+         //sumup_thread[index]++; //I think we don't need it, according to dt test
          requestError(fd, filename, "403", "Forbidden", "OS-HW3 Server could not read this file", sthread, dthread, sumup_thread, index, received, handeling);
          return;
       }
       sthread[index]++;
-      sumup_thread[index]++;
+      //sumup_thread[index]++;
       requestServeStatic(fd, filename, sbuf.st_size, sthread, dthread, sumup_thread, index, received, handeling);
    } else {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-         sumup_thread[index]++;
+         //sumup_thread[index]++; 
          requestError(fd, filename, "403", "Forbidden", "OS-HW3 Server could not run this CGI program", sthread, dthread, sumup_thread, index, received, handeling);
          return;
       }
-      sumup_thread[index]++;
+      //sumup_thread[index]++;  //we need it
       dthread[index]++; //added
       requestServeDynamic(fd, filename, cgiargs, sthread, dthread, sumup_thread, index, received, handeling);
    }
