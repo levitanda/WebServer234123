@@ -189,12 +189,21 @@ void requestHandle(int fd, int *sthread, int *dthread, int *sumup_thread, int in
    }
    requestReadhdrs(&rio);
    is_static = requestParseURI(uri, filename, cgiargs);
-   int timeout_seconds = 3;
+   int timeout_seconds = 60;
    alarm(timeout_seconds);
    if (stat(filename, &sbuf) == -1) {
       requestError(fd, filename, "404", "Not found", "OS-HW3 Server could not find this file", sthread, dthread, sumup_thread, index, received, handeling);
       return;
    }
+   /*if(access(filename, F_OK | R_OK | W_OK | X_OK)!=0){
+      requestError(fd, filename, "404", "Not found", "OS-HW3 Server could not find this file", sthread, dthread, sumup_thread, index, received, handeling);
+      return;
+   }*/
+   /*if(stat(filename, &sbuf)!=0){
+      requestError(fd, filename, "404", "Not found", "OS-HW3 Server could not find this file", sthread, dthread, sumup_thread, index, received, handeling);
+      return;
+   }*/
+   stat(filename, &sbuf);
    if (is_static) {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
          //sumup_thread[index]++; //I think we don't need it, according to dt test
